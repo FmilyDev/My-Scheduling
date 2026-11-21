@@ -56,7 +56,8 @@
   const findCourse = id => state.courses.find(c => c.id === id);
   const isSelected = c => c.sections.some(s => s.id === c.selectedSectionId);
   const timeText = s => `${L.DAYS[s.day].short} ${L.SLOTS[s.slot]}`;
-  const sectionText = s => [timeText(s), s.room, s.type].filter(Boolean).join(' · ');
+  const sectionText = s => [timeText(s), s.room].filter(Boolean).join(' · ');
+  const typeTag = t => t ? `<span class="type-tag">${t}</span>` : '';
   const samePreview = (a, b) => (!a && !b) || (a && b && a.courseId === b.courseId && a.sectionId === b.sectionId);
 
   // ---------- render ----------
@@ -107,7 +108,7 @@
         <div class="course-head">
           <span class="dot"></span>
           <div class="course-titles">
-            <h3>${esc(c.code)}</h3>
+            <h3>${esc(c.code)}${typeTag(c.type)}</h3>
             ${c.name ? `<p class="muted">${esc(c.name)}</p>`
               : `<p class="muted">ยังไม่ได้ใส่ชื่อวิชา<button type="button" class="link" data-action="edit">+ เพิ่มชื่อ</button></p>`}
           </div>
@@ -269,7 +270,7 @@
   let draftErrors = [];
 
   function newSection(number) {
-    return { id: St.newId(), number: String(number), day: 0, slot: 0, room: '', type: '' };
+    return { id: St.newId(), number: String(number), day: 0, slot: 0, room: '' };
   }
   function nextSectionNumber() {
     return L.suggestNextSection(draft.sections.map(s => s.number));
@@ -277,7 +278,7 @@
 
   function openCourseDialog(courseId) {
     const c = courseId && findCourse(courseId);
-    draft = c ? { ...clone(c), isNew: false } : { id: St.newId(), code: '', name: '', selectedSectionId: null, sections: [newSection('')], isNew: true };
+    draft = c ? { ...clone(c), isNew: false } : { id: St.newId(), code: '', name: '', type: '', selectedSectionId: null, sections: [newSection('')], isNew: true };
     draftErrors = [];
     renderDialog();
     els.dlg.showModal();
@@ -299,6 +300,11 @@
           <label class="field"><span class="lbl">ชื่อวิชา <span class="muted">(ไม่บังคับ ใส่ทีหลังได้)</span></span>
             <input name="name" value="${esc(draft.name)}" autocomplete="off"></label>
         </div>
+        <div class="field"><span class="lbl" id="ctype-lbl">ประเภทวิชา <span class="muted">(ไม่บังคับ · ใช้กับทุก Section)</span></span>
+          <div class="seg" role="radiogroup" aria-labelledby="ctype-lbl">
+            ${[['', 'ไม่ระบุ'], ['Lect', 'Lect'], ['Lab', 'Lab']].map(([v, t]) =>
+              `<label><input type="radio" name="ctype" value="${v}"${(draft.type || '') === v ? ' checked' : ''}><span>${t}</span></label>`).join('')}
+          </div></div>
         ${draft.sections.map(s => `<fieldset class="sec-card" data-sid="${esc(s.id)}">
           <legend class="sr-only">Section ${esc(s.number)}</legend>
           <div class="sec-card-head">
@@ -311,11 +317,6 @@
             <label class="field"><span class="lbl">ช่วงเวลา</span><select data-field="slot">${opts(L.SLOTS, s.slot, x => x)}</select></label>
             <label class="field f-room"><span class="lbl">ห้อง <span class="muted">(ไม่บังคับ)</span></span>
               <input data-field="room" value="${esc(s.room)}" placeholder="เช่น R301" autocomplete="off"></label>
-            <div class="field f-type"><span class="lbl" id="t-${esc(s.id)}">ประเภท <span class="muted">(ไม่บังคับ)</span></span>
-              <div class="seg" role="radiogroup" aria-labelledby="t-${esc(s.id)}">
-                ${[['', 'ไม่ระบุ'], ['Lect', 'Lect'], ['Lab', 'Lab']].map(([v, t]) =>
-                  `<label><input type="radio" name="type-${esc(s.id)}" data-field="type" value="${v}"${s.type === v ? ' checked' : ''}><span>${t}</span></label>`).join('')}
-              </div></div>
           </div></fieldset>`).join('')}
         <button type="button" class="add-section" data-action="add-section">+ เพิ่ม Section</button>
       </div>
@@ -331,6 +332,7 @@
     if (!draft) return;
     if (t.name === 'code') { draft.code = t.value; return; }
     if (t.name === 'name') { draft.name = t.value; return; }
+    if (t.name === 'ctype') { draft.type = t.value; return; }
     const card = t.closest('[data-sid]');
     const s = card && draft.sections.find(x => x.id === card.dataset.sid);
     if (!s || !t.dataset.field) return;
@@ -343,6 +345,7 @@
       id: draft.id,
       code: L.normalizeCode(draft.code),
       name: draft.name.trim(),
+      type: draft.type || '',
       selectedSectionId: draft.selectedSectionId,
       sections: draft.sections.map(s => ({ ...s, number: L.normalizeSection(s.number), room: s.room.trim() })),
     };

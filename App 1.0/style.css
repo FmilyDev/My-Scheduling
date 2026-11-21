@@ -109,6 +109,10 @@ button.chip:hover { filter: brightness(.97); }
 .course-titles h3 { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .course-titles p { font-size: 13px; overflow-wrap: anywhere; }
 .course-titles .link { margin-left: 4px; }
+.type-tag {
+  display: inline-block; margin-left: 8px; padding: 0 8px; border-radius: 6px; vertical-align: 2px;
+  font-size: 12px; font-weight: 500; color: var(--c); background: var(--cbg);
+}
 .sections { display: flex; flex-direction: column; gap: 8px; }
 .sec-row {
   display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 8px;
@@ -237,7 +241,8 @@ dialog form { display: flex; flex-direction: column; max-height: calc(100vh - 48
 .inline { display: flex; align-items: center; gap: 10px; font-weight: 600; }
 .in-num { width: 88px; text-transform: uppercase; letter-spacing: .02em; }
 .in-num::placeholder { text-transform: none; }
-.sec-fields { display: grid; grid-template-columns: 130px 160px minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.sec-fields { display: grid; grid-template-columns: 130px 160px minmax(0, 1fr); gap: 8px; align-items: end; }
+.seg { align-self: flex-start; }
 .seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: #F2F4F7; }
 .seg label { position: relative; }
 .seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
@@ -301,7 +306,7 @@ dialog form { display: flex; flex-direction: column; max-height: calc(100vh - 48
 
   .row2 { grid-template-columns: 1fr; }
   .sec-fields { grid-template-columns: 1fr 1fr; }
-  .sec-fields .f-room, .sec-fields .f-type { grid-column: span 2; }
+  .sec-fields .f-room { grid-column: span 2; }
   .dlg-head, .dlg-body, .dlg-foot { padding-left: 16px; padding-right: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {

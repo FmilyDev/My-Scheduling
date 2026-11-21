@@ -70,21 +70,24 @@
       if (!c || typeof c !== 'object' || c.id == null) continue;
       const code = normalizeCode(c.code);
       if (!code) continue;
-      const sections = (Array.isArray(c.sections) ? c.sections : [])
-        .filter(s => s && s.id != null && isIndex(s.day, 5) && isIndex(s.slot, 3))
-        .map(s => ({
-          id: String(s.id),
-          number: normalizeSection(s.number),
-          day: s.day,
-          slot: s.slot,
-          room: typeof s.room === 'string' ? s.room.trim() : '',
-          type: TYPES.includes(s.type) ? s.type : '',
-        }));
+      const rawSections = (Array.isArray(c.sections) ? c.sections : [])
+        .filter(s => s && s.id != null && isIndex(s.day, 5) && isIndex(s.slot, 3));
+      const sections = rawSections.map(s => ({
+        id: String(s.id),
+        number: normalizeSection(s.number),
+        day: s.day,
+        slot: s.slot,
+        room: typeof s.room === 'string' ? s.room.trim() : '',
+      }));
+      // type belongs to the course; older data stored it per section
+      const legacyType = (rawSections.find(s => s.type && TYPES.includes(s.type)) || {}).type || '';
+      const type = TYPES.includes(c.type) && c.type ? c.type : legacyType;
       const sel = sections.some(s => s.id === String(c.selectedSectionId)) ? String(c.selectedSectionId) : null;
       out.courses.push({
         id: String(c.id),
         code,
         name: typeof c.name === 'string' ? c.name.trim() : '',
+        type,
         selectedSectionId: sel,
         sections,
       });
@@ -96,7 +99,7 @@
     return {
       courseId: course.id, code: course.code, colorIndex,
       sectionId: s.id, sectionNumber: s.number,
-      day: s.day, slot: s.slot, room: s.room, type: s.type,
+      day: s.day, slot: s.slot, room: s.room, type: course.type || '',
     };
   }
 
@@ -153,7 +156,7 @@
         if (s.id === c.selectedSectionId || sectionConflicts(state, c.id, s.id)) continue;
         out.push({
           courseId: c.id, code: c.code, sectionId: s.id, sectionNumber: s.number,
-          day: s.day, slot: s.slot, room: s.room, type: s.type,
+          day: s.day, slot: s.slot, room: s.room, type: c.type || '',
         });
       }
     }

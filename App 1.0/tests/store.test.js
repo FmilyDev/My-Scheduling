@@ -10,8 +10,8 @@ const throwing = { getItem() { throw new Error('denied'); }, setItem() { throw n
 
 const sample = {
   courses: [{
-    id: 'a', code: 'CS101', name: 'โปรแกรม', selectedSectionId: 's1',
-    sections: [{ id: 's1', number: '1', day: 0, slot: 0, room: 'R301', type: 'Lect' }],
+    id: 'a', code: 'CS101', name: 'โปรแกรม', type: 'Lect', selectedSectionId: 's1',
+    sections: [{ id: 's1', number: '101A', day: 0, slot: 0, room: 'R301' }],
   }],
 };
 

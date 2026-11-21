@@ -2,8 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const L = require('../js/logic.js');
 
-const sec = (id, number, day, slot, room = '', type = '') => ({ id, number, day, slot, room, type });
-const course = (id, code, sections, selectedSectionId = null, name = '') => ({ id, code, name, selectedSectionId, sections });
+const sec = (id, number, day, slot, room = '') => ({ id, number, day, slot, room });
+const course = (id, code, sections, selectedSectionId = null, name = '', type = '') => ({ id, code, name, type, selectedSectionId, sections });
 
 // ---------- Task 1 ----------
 test('constants', () => {
@@ -63,9 +63,18 @@ test('sanitizeState', () => {
   assert.equal(s.courses[0].selectedSectionId, null, 'dangling selection cleared');
   assert.equal(s.courses[0].code, 'CS101');
   assert.deepEqual(s.courses[0].sections.map(x => x.id), ['s1'], 'section with day 9 dropped');
-  const kept = L.sanitizeState({ courses: [course('a', 'CS101', [sec('s1', '1', 0, 0, 'R1', 'Lab')], 's1')] });
+  const kept = L.sanitizeState({ courses: [course('a', 'CS101', [sec('s1', '101A', 0, 0, 'R1')], 's1', '', 'Lab')] });
   assert.equal(kept.courses[0].selectedSectionId, 's1');
-  assert.equal(kept.courses[0].sections[0].type, 'Lab');
+  assert.equal(kept.courses[0].type, 'Lab');
+  assert.equal(L.sanitizeState({ courses: [course('a', 'CS101', [], null, '', 'Bogus')] }).courses[0].type, '');
+});
+
+test('sanitizeState moves old per-section type up to the course', () => {
+  const old = { courses: [{ id: 'a', code: 'CS101', name: '', selectedSectionId: null,
+    sections: [{ id: 's1', number: '101A', day: 0, slot: 0, room: '', type: '' }, { id: 's2', number: '101B', day: 1, slot: 0, room: '', type: 'Lect' }] }] };
+  const s = L.sanitizeState(old);
+  assert.equal(s.courses[0].type, 'Lect');
+  assert.ok(s.courses[0].sections.every(x => !('type' in x)), 'sections no longer carry a type');
 });
 
 test('escapeHtml', () => {
@@ -76,10 +85,10 @@ test('escapeHtml', () => {
 function fixture() {
   return {
     courses: [
-      course('cs', 'CS101', [sec('cs1', '1', 2, 1, 'L204', 'Lab'), sec('cs2', '2', 1, 0, 'R302', 'Lect')], 'cs1', 'การเขียนโปรแกรมเบื้องต้น'),
-      course('ma', 'MA102', [sec('ma1', '1', 1, 1, 'R401', 'Lect'), sec('ma3', '3', 0, 2, 'R105', 'Lect')], 'ma3', 'แคลคูลัส 2'),
-      course('ph', 'PH101', [sec('ph1', '1', 1, 2, 'R210', 'Lect'), sec('ph2', '2', 2, 1, 'R210', 'Lect')], 'ph2'),
-      course('en', 'EN201', [sec('en1', '1', 4, 3, 'R501'), sec('en2', '2', 5, 0, 'R501')], null),
+      course('cs', 'CS101', [sec('cs1', '001A', 2, 1, 'L204'), sec('cs2', '002A', 1, 0, 'R302')], 'cs1', 'การเขียนโปรแกรมเบื้องต้น', 'Lab'),
+      course('ma', 'MA102', [sec('ma1', '101A', 1, 1, 'R401'), sec('ma3', '101C', 0, 2, 'R105')], 'ma3', 'แคลคูลัส 2', 'Lect'),
+      course('ph', 'PH101', [sec('ph1', '201A', 1, 2, 'R210'), sec('ph2', '201B', 2, 1, 'R210')], 'ph2', '', 'Lect'),
+      course('en', 'EN201', [sec('en1', '301A', 4, 3, 'R501'), sec('en2', '301B', 5, 0, 'R501')], null),
     ],
   };
 }
@@ -90,6 +99,7 @@ test('findConflicts finds Wed slot 2 clash', () => {
   assert.equal(c[0].day, 2);
   assert.equal(c[0].slot, 1);
   assert.deepEqual(c[0].entries.map(e => e.code), ['CS101', 'PH101']);
+  assert.deepEqual(c[0].entries.map(e => e.type), ['Lab', 'Lect'], 'entry type comes from the course');
 });
 
 test('summary', () => {
@@ -105,7 +115,7 @@ test('sectionConflicts checks against other courses only', () => {
 
 test('swapOptions lists non-clashing alternatives', () => {
   const o = L.swapOptions(fixture(), 2, 1);
-  assert.deepEqual(o.map(x => `${x.code} ${x.sectionNumber}`).sort(), ['CS101 2', 'PH101 1']);
+  assert.deepEqual(o.map(x => `${x.code} ${x.sectionNumber}`).sort(), ['CS101 002A', 'PH101 201A']);
 });
 
 test('buildGrid with preview marks ghost and leaving', () => {
