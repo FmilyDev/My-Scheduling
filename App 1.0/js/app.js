@@ -272,13 +272,12 @@
     return { id: St.newId(), number: String(number), day: 0, slot: 0, room: '', type: '' };
   }
   function nextSectionNumber() {
-    const nums = draft.sections.map(s => parseInt(s.number, 10)).filter(Number.isFinite);
-    return nums.length ? Math.max(...nums) + 1 : draft.sections.length + 1;
+    return L.suggestNextSection(draft.sections.map(s => s.number));
   }
 
   function openCourseDialog(courseId) {
     const c = courseId && findCourse(courseId);
-    draft = c ? { ...clone(c), isNew: false } : { id: St.newId(), code: '', name: '', selectedSectionId: null, sections: [newSection(1)], isNew: true };
+    draft = c ? { ...clone(c), isNew: false } : { id: St.newId(), code: '', name: '', selectedSectionId: null, sections: [newSection('')], isNew: true };
     draftErrors = [];
     renderDialog();
     els.dlg.showModal();
@@ -290,7 +289,7 @@
     const opts = (list, val, label) => list.map((x, i) => `<option value="${i}"${i === val ? ' selected' : ''}>${label(x)}</option>`).join('');
     els.dlg.innerHTML = `<form id="course-form" novalidate>
       <div class="dlg-head"><div><h2 id="dlg-title">${draft.isNew ? 'เพิ่มวิชา' : 'แก้ไขวิชา'}</h2>
-        <p class="muted">แต่ละ Section มี 1 คาบ · เลข Section ห้ามซ้ำในวิชานี้ แต่ซ้ำกับวิชาอื่นได้</p></div>
+        <p class="muted">แต่ละ Section มี 1 คาบ · เลข Section เช่น 101A (ตัวเลข 3 ตัว + A–F) ห้ามซ้ำในวิชานี้ แต่ซ้ำกับวิชาอื่นได้</p></div>
         <button type="button" class="icon-btn" data-action="cancel" aria-label="ปิด">${icon('x', 20)}</button></div>
       <div class="dlg-body">
         ${draftErrors.length ? `<div class="errors" role="alert">${icon('alert', 16)}<ul>${draftErrors.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : ''}
@@ -303,7 +302,7 @@
         ${draft.sections.map(s => `<fieldset class="sec-card" data-sid="${esc(s.id)}">
           <legend class="sr-only">Section ${esc(s.number)}</legend>
           <div class="sec-card-head">
-            <label class="inline">Section <input class="in-num" data-field="number" value="${esc(s.number)}" autocomplete="off" aria-label="เลข Section"></label>
+            <label class="inline">Section <input class="in-num" data-field="number" value="${esc(s.number)}" placeholder="101A" maxlength="6" autocomplete="off" spellcheck="false" aria-label="เลข Section (ตัวเลข 3 ตัว + A–F เช่น 101A)"></label>
             <span class="sp"></span>
             ${draft.sections.length > 1 ? '<button type="button" class="link danger" data-action="remove-section">ลบ Section</button>' : ''}
           </div>
@@ -345,7 +344,7 @@
       code: L.normalizeCode(draft.code),
       name: draft.name.trim(),
       selectedSectionId: draft.selectedSectionId,
-      sections: draft.sections.map(s => ({ ...s, number: L.normalizeCode(s.number), room: s.room.trim() })),
+      sections: draft.sections.map(s => ({ ...s, number: L.normalizeSection(s.number), room: s.room.trim() })),
     };
     draftErrors = L.validateCourse(course, state.courses);
     if (draftErrors.length) {

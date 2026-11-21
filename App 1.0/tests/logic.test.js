@@ -19,19 +19,40 @@ test('normalizeCode trims, collapses spaces, uppercases', () => {
 });
 
 test('validateCourse rules', () => {
-  const ok = course('a', 'CS101', [sec('s1', '1', 0, 0)]);
+  const ok = course('a', 'CS101', [sec('s1', '101A', 0, 0)]);
   assert.deepEqual(L.validateCourse(ok, [ok]), [], 'valid course (no name, no room, no type) passes; not duplicate of itself');
   assert.deepEqual(L.validateCourse({ ...ok, code: '  ' }, []), ['กรุณาใส่รหัสวิชา']);
-  const other = course('b', 'CS101', [sec('x', '1', 1, 1)]);
+  const other = course('b', 'CS101', [sec('x', '101A', 1, 1)]);
   assert.deepEqual(L.validateCourse({ ...ok, id: 'new', code: ' cs101' }, [other]), ['รหัสวิชา CS101 มีอยู่แล้ว']);
   assert.deepEqual(L.validateCourse({ ...ok, sections: [] }, []), ['ต้องมีอย่างน้อย 1 Section']);
   assert.deepEqual(L.validateCourse({ ...ok, sections: [sec('s1', ' ', 0, 0)] }, []), ['กรุณาใส่เลข Section']);
-  assert.deepEqual(L.validateCourse({ ...ok, sections: [sec('s1', '1', 0, 0), sec('s2', '1', 1, 0)] }, []), ['Section 1 มีอยู่แล้วในวิชานี้']);
+  assert.deepEqual(L.validateCourse({ ...ok, sections: [sec('s1', '101A', 0, 0), sec('s2', ' 101a', 1, 0)] }, []), ['Section 101A มีอยู่แล้วในวิชานี้']);
+});
+
+test('section number format: 3 digits + one letter A-F', () => {
+  const FORMAT = 'เลข Section ต้องเป็นตัวเลข 3 ตัวตามด้วย A–F เช่น 101A';
+  const withNum = n => course('a', 'CS101', [sec('s1', n, 0, 0)]);
+  for (const bad of ['1', '101', '101G', '1011', '10A', 'A101', '101AB']) {
+    assert.deepEqual(L.validateCourse(withNum(bad), []), [FORMAT], bad);
+  }
+  for (const good of ['101A', '001F', ' 205 c ', '999f']) {
+    assert.deepEqual(L.validateCourse(withNum(good), []), [], good);
+  }
+  assert.equal(L.normalizeSection(' 205 c '), '205C');
+});
+
+test('suggestNextSection', () => {
+  assert.equal(L.suggestNextSection([]), '');
+  assert.equal(L.suggestNextSection(['101A']), '101B');
+  assert.equal(L.suggestNextSection(['101A', '101C', 'junk']), '101D');
+  assert.equal(L.suggestNextSection(['101F']), '102A');
+  assert.equal(L.suggestNextSection(['009F', '002B']), '010A');
+  assert.equal(L.suggestNextSection(['999F']), '');
 });
 
 test('section number may repeat across courses', () => {
-  const a = course('a', 'CS101', [sec('s1', '1', 0, 0)]);
-  const b = course('b', 'MA102', [sec('s2', '1', 1, 0)]);
+  const a = course('a', 'CS101', [sec('s1', '101A', 0, 0)]);
+  const b = course('b', 'MA102', [sec('s2', '101A', 1, 0)]);
   assert.deepEqual(L.validateCourse(b, [a, b]), []);
 });
 

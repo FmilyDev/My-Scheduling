@@ -36,12 +36,29 @@
     if (!sections.length) errors.push('ต้องมีอย่างน้อย 1 Section');
     const seen = new Set();
     for (const s of sections) {
-      const n = normalizeCode(s.number);
+      const n = normalizeSection(s.number);
       if (!n) { errors.push('กรุณาใส่เลข Section'); continue; }
+      if (!SECTION_RE.test(n)) { errors.push('เลข Section ต้องเป็นตัวเลข 3 ตัวตามด้วย A–F เช่น 101A'); continue; }
       if (seen.has(n)) errors.push(`Section ${n} มีอยู่แล้วในวิชานี้`);
       seen.add(n);
     }
     return [...new Set(errors)];
+  }
+
+  // Section number: 3 digits + one letter A–F, e.g. 101A
+  const SECTION_RE = /^\d{3}[A-F]$/;
+  function normalizeSection(n) {
+    return String(n ?? '').replace(/\s+/g, '').toUpperCase();
+  }
+
+  function suggestNextSection(numbers) {
+    const valid = numbers.map(normalizeSection).filter(n => SECTION_RE.test(n)).sort();
+    if (!valid.length) return '';
+    const last = valid[valid.length - 1];
+    const num = Number(last.slice(0, 3));
+    const letter = last[3];
+    if (letter < 'F') return last.slice(0, 3) + String.fromCharCode(letter.charCodeAt(0) + 1);
+    return num < 999 ? String(num + 1).padStart(3, '0') + 'A' : '';
   }
 
   const isIndex = (v, max) => Number.isInteger(v) && v >= 0 && v <= max;
@@ -57,7 +74,7 @@
         .filter(s => s && s.id != null && isIndex(s.day, 5) && isIndex(s.slot, 3))
         .map(s => ({
           id: String(s.id),
-          number: normalizeCode(s.number),
+          number: normalizeSection(s.number),
           day: s.day,
           slot: s.slot,
           room: typeof s.room === 'string' ? s.room.trim() : '',
@@ -160,7 +177,7 @@
 
   const api = {
     DAYS, SLOTS, COURSE_COLORS, TYPES,
-    normalizeCode, validateCourse, sanitizeState, escapeHtml,
+    normalizeCode, normalizeSection, suggestNextSection, SECTION_RE, validateCourse, sanitizeState, escapeHtml,
     selectedEntries, buildGrid, findConflicts, sectionConflicts, swapOptions, summary,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

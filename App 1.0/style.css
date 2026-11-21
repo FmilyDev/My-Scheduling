@@ -235,7 +235,8 @@ dialog form { display: flex; flex-direction: column; max-height: calc(100vh - 48
 .sec-card-head { display: flex; align-items: center; gap: 12px; }
 .sec-card-head .sp { flex: 1; }
 .inline { display: flex; align-items: center; gap: 10px; font-weight: 600; }
-.in-num { width: 80px; }
+.in-num { width: 88px; text-transform: uppercase; letter-spacing: .02em; }
+.in-num::placeholder { text-transform: none; }
 .sec-fields { display: grid; grid-template-columns: 130px 160px minmax(0, 1fr) auto; gap: 8px; align-items: end; }
 .seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: #F2F4F7; }
 .seg label { position: relative; }
